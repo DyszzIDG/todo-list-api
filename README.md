@@ -8,9 +8,11 @@ Incluye una **API REST** con operaciones CRUD completas y una interfaz web inter
 
 ## 🌐 Demo en Vivo
 
-> 🚀 Puedes desplegar y probar esta app gratis en servicios como [Render](https://render.com) conectando este repositorio.
-> 
-> **Enlace del demo:** *(Próximamente / Inserta aquí tu URL de Render o Railway)*
+Puedes probar la aplicación en funcionamiento directamente desde tu navegador:
+
+👉 **[Ver Aplicación en Vivo (Render)](https://todo-list-api-me1s.onrender.com/)**
+
+[![Deploy to Render](https://img.shields.io/badge/Render-Deployed%20Live-brightgreen?style=for-the-badge&logo=render)](https://todo-list-api-me1s.onrender.com/)
 
 ---
 
