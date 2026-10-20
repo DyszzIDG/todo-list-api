@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Todo List</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    body {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+    .container {
+      background: #ffffff;
+      width: 100%;
+      max-width: 520px;
+      border-radius: 14px;
+      padding: 28px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    }
+    h1 {
+      font-size: 26px;
+      margin-bottom: 20px;
+      text-align: center;
+      color: #1e293b;
+    }
+    .form-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus {
+      border-color: #3b82f6;
+    }
+    button.btn-add {
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button.btn-add:hover {
+      background-color: #2563eb;
+    }
+    ul.todo-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    li.todo-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+    li.todo-item:hover {
+      background: #f1f5f9;
+    }
+    .todo-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+    .todo-content input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #3b82f6;
+    }
+    .todo-text {
+      font-size: 15px;
+      color: #334155;
+      word-break: break-word;
+    }
+    .completed .todo-text {
+      text-decoration: line-through;
+      color: #94a3b8;
+    }
+    .btn-delete {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      padding: 6px;
+      font-size: 18px;
+      border-radius: 6px;
+      transition: background-color 0.2s;
+      line-height: 1;
+    }
+    .btn-delete:hover {
+      background-color: #fee2e2;
+    }
+    .empty-state {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Lista de Tareas</h1>
+
+    <!-- Formulario para agregar nueva tarea -->
+    <form id="todo-form" class="form-group">
+      <input type="text" id="todo-input" placeholder="¿Qué tienes que hacer hoy?" required />
+      <button type="submit" class="btn-add">Agregar</button>
+    </form>
+
+    <!-- Lista de tareas -->
+    <ul id="todo-list" class="todo-list"></ul>
+    <p id="empty-state" class="empty-state" style="display: none;">No tienes tareas pendientes 🎉</p>
+  </div>
+
+  <script>
+    const form = document.getElementById('todo-form');
+    const input = document.getElementById('todo-input');
+    const list = document.getElementById('todo-list');
+    const emptyState = document.getElementById('empty-state');
+
+    // 1. CARGAR TAREAS DESDE EL BACKEND (GET /todos)
+    async function loadTodos() {
+      try {
+        const response = await fetch('/todos');
+        const todos = await response.json();
+        renderTodos(todos);
+      } catch (error) {
+        console.error('Error al cargar tareas:', error);
+      }
+    }
+
+    // 2. RENDERIZAR EN EL HTML
+    function renderTodos(todos) {
+      list.innerHTML = '';
+      if (todos.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+      }
+      emptyState.style.display = 'none';
+
+      todos.forEach(todo => {
+        const li = document.createElement('li');
+        li.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+
+        li.innerHTML = `
+          <div class="todo-content">
+            <input type="checkbox" ${todo.completed ? 'checked' : ''} onchange="toggleTodo(${todo.id}, this.checked)" />
+            <span class="todo-text">${escapeHtml(todo.title)}</span>
+          </div>
+          <button class="btn-delete" title="Eliminar tarea" onclick="deleteTodo(${todo.id})">🗑️</button>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    // 3. AGREGAR NUEVA TAREA (POST /todos)
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = input.value.trim();
+      if (!title) return;
+
+      try {
+        const response = await fetch('/todos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title })
+        });
+
+        if (response.ok) {
+          input.value = '';
+          loadTodos(); // Recarga la lista desde el backend
+        }
+      } catch (error) {
+        console.error('Error al crear tarea:', error);
+      }
+    });
+
+    // 4. CAMBIAR ESTADO A COMPLETADA / PENDIENTE (PUT /todos/:id)
+    async function toggleTodo(id, completed) {
+      try {
+        await fetch(`/todos/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ completed })
+        });
+        loadTodos();
+      } catch (error) {
+        console.error('Error al actualizar estado:', error);
+      }
+    }
+
+    // 5. BORRAR UNA TAREA (DELETE /todos/:id)
+    async function deleteTodo(id) {
+      try {
+        await fetch(`/todos/${id}`, {
+          method: 'DELETE'
+        });
+        loadTodos();
+      } catch (error) {
+        console.error('Error al eliminar tarea:', error);
+      }
+    }
+
+    // Pequeña función de seguridad para evitar inyección de HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.innerText = text;
+      return div.innerHTML;
+    }
+
+    // Cargar las tareas al abrir la página por primera vez
+    loadTodos();
+  </script>
+</body>
+</html>
